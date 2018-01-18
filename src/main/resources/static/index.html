@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>Bootstrap 101 Template</title>
+
+    <!-- Bootstrap -->
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <script src="/js/jquery-3.0.0.min.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--[if lt IE 9]>
+    <!--<script src="/js/html5shiv.min.js"></script>-->
+    <!--<script src="/js/respond.min.js"></script>-->
+    <![endif]-->
+</head>
+<body>
+<div class="container" id="app">
+    <div class="row">
+        <h1>文件管理</h1>
+    </div>
+    <div class="row">
+        <button class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal">
+            上传文件
+        </button>
+    </div>
+    <div class="row">
+        <table class="table table-striped">
+            <thead>
+            <tr>
+                <td>#</td>
+                <td>源文件名</td>
+                <td>FastDFS存储key</td>
+                <td>上传时间</td>
+                <td>操作</td>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="file in files">
+                <td>{{ file.id }}</td>
+                <td>{{ file.originName }}</td>
+                <td>{{ file.fdfsKey }}</td>
+                <td>{{ file.uploadTime }}</td>
+                <td>
+                    <input class="btn btn-primary" type="button" value="下载" @click="download(file)">
+                    <input class="btn btn-primary" type="button" value="删除" @click="deleteFile(file)">
+                </td>
+            </tr>
+            <!--<file-item v-for="item in files"
+                       v-bind:file="item"
+                       v-bind:key="item.id">
+
+            </file-item>-->
+            </tbody>
+        </table>
+    </div>
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="myModalLabel">
+                        选择文件
+                    </h4>
+                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">
+                        &times;
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="upload-form">
+                        <div class="form-group">
+                            <label for="upload-file" class="control-label">请选择文件:</label>
+                            <input type="file" name="file" class="form-control" id="upload-file"/>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-default" data-dismiss="modal">取消
+                    </button>
+                    <button type="button" class="btn btn-primary" @click="upload">
+                        上传
+                    </button>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal -->
+    </div>
+
+</div>
+
+<script src="/js/vue.js"></script>
+<script src="/js/axios.min.js"></script>
+<script>
+    $('#myModal').on('hide.bs.modal', function (e) {
+        $('upload-form').find("input[type=text], input[type=file], textarea").val("");
+        console.log('form hide');
+    }).on("hidden.bs.modal", function (e) {
+        $('upload-form').find("input[type=text], input[type=file], textarea").val("");
+        console.log('form hide');
+    });
+
+    Vue.component('file-item', {
+        props: ['file'],
+        template: '<tr>' +
+        '<td>{{ file.id }}</td>'     +
+        '<td>{{ file.fdfsKey }}</td>' +
+        '<td>{{ file.uploadTime }}</td>' +
+        '<td>' +
+        '<input class="btn btn-primary" type="button" value="查看">' +
+        '<input class="btn btn-primary" type="button" value="删除">' +
+        '</td>' +
+        '</tr>'
+    });
+
+    var app = new Vue({
+        el: "#app",
+        data: {
+            files: [
+                {id: "1", fdfsKey: "sfsdf", uploadTime: "2018-01-12 00:00:00"}
+            ]
+        },
+        methods: {
+            upload: function(event) {
+                var imgFile = $(this.$el).find('#upload-file')[0].files[0];//取到上传的图片
+                console.log($(this.$el).find('#upload-file')[0].files);//由打印的可以看到，图片信息就在files[0]里面
+                var formData = new FormData(); //通过formdata上传
+                formData.append('file',imgFile);
+                axios.post('/file', formData).then(function (response) {
+                    console.log(response);
+                    $('#myModal').modal('hide');
+                    $('upload-form').find("input[type=text], input[type=file], textarea").val("");
+
+                    app.flushData()
+                });
+            },
+            download: function (file) {
+                window.location.href = "/file/" + file.id;
+            },
+            deleteFile: function (file) {
+                if (window.confirm('确定要删除吗?')) {
+                    axios.delete('/file/' + file.id)
+                        .then(function (response) {
+                            console.log(response);
+                            app.flushData()
+                        });
+                }
+            },
+            flushData: function () {
+                axios.get('/file')
+                    .then(function (response) {
+                        console.log(response);
+                        app.files = response.data;
+                    });
+            }
+        }
+    });
+
+    app.flushData()
+</script>
+</body>
+</html>
